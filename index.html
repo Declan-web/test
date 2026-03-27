@@ -19,17 +19,16 @@
             cursor: none; 
         }
         
-        /* 다트판: 최상위 레이어 설정 */
+        /* 다트판: 최상위 레이어 */
         #moving-dart {
             position: fixed; width: 420px; height: 420px;
-            z-index: 9999; /* 모든 UI보다 위에 표시 */
-            pointer-events: none; /* 클릭 방해 금지 */
+            z-index: 9999; 
+            pointer-events: none; 
             display: none; top: 0; left: 0;
             filter: drop-shadow(0 0 30px rgba(0,0,0,1));
             will-change: transform;
         }
 
-        /* 커서 및 히트마크도 최상위권 유지 */
         #custom-cursor {
             position: fixed; width: 40px; height: 40px;
             border: 2px solid var(--neon-red); border-radius: 50%;
@@ -58,14 +57,14 @@
         .game-section { display: none; flex-direction: column; align-items: center; width: 100%; }
         .game-section.active { display: flex; }
 
-        /* HUD 및 랭킹 */
+        /* HUD */
         #hud { width: 260px; background: var(--glass-bg); padding: 25px; border-radius: 15px; border: 1px solid #222; }
         .stat-box { margin-bottom: 25px; }
         .label { color: #666; font-size: 0.75em; margin-bottom: 8px; text-transform: uppercase; }
         .val { font-size: 2.2em; font-weight: bold; }
         #total-score { color: var(--neon-red); }
 
-        /* 슬롯머신 복구된 스타일 */
+        /* 슬롯머신 */
         #slot-machine { width: 700px; background: #151515; padding: 50px; border-radius: 20px; border: 8px solid #2a2a2a; text-align: center; box-shadow: inset 0 0 80px #000; }
         .slot-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; }
         .slot-window { width: 120px; height: 160px; background: #000; border: 4px solid var(--dark-red); border-radius: 10px; overflow: hidden; position: relative; }
@@ -115,6 +114,7 @@
         </div>
 
         <div id="slot-section" class="game-section">
+            <div class="description">운명이 결정되는 단 한 번의 찬스</div>
             <div id="slot-machine">
                 <div id="slot-msg">CHALLENGE YOUR LUCK</div>
                 <div class="slot-container">
@@ -200,7 +200,6 @@
         }
     }
 
-    /* 슬롯머신 로직 복구 */
     const slotItems = ['♠','◆','♥','♣','●','■']; 
     function initReels() {
         document.querySelectorAll('.slot-reel').forEach(r => {
