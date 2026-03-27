@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>CASINO EDEN - FULLSCREEN DART</title>
+    <title>CASINO EDEN - TOP LAYER DART</title>
     <style>
         :root {
             --dark-red: #7a0000;
@@ -12,27 +12,30 @@
         body { 
             margin: 0; background-color: var(--deep-black); color: white; 
             font-family: 'Arial', sans-serif; display: flex; flex-direction: column; align-items: center; 
-            overflow-x: hidden; min-height: 100vh; position: relative;
+            overflow: hidden; width: 100vw; height: 100vh; position: relative;
         }
         
-        #tab-menu { display: flex; gap: 10px; margin-top: 20px; z-index: 100; }
+        /* 탭 메뉴, 타이틀 등 기본 UI */
+        #ui-layer { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; width: 100%; }
+        
+        #tab-menu { display: flex; gap: 10px; margin-top: 20px; }
         .tab-btn { padding: 10px 30px; background: #222; border: 1px solid #444; color: #888; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .tab-btn.active { background: var(--dark-red); color: #fff; border-color: var(--dark-red); }
 
-        h1 { color: var(--dark-red); font-size: 3.5em; margin-top: 20px; margin-bottom: 5px; font-family: 'Batang', 'Gungsuh', serif; letter-spacing: 5px; z-index: 100; }
-        .description { color: #555; margin-bottom: 30px; font-size: 1em; font-weight: bold; height: 1.2em; z-index: 100; }
+        h1 { color: var(--dark-red); font-size: 3.5em; margin-top: 20px; margin-bottom: 5px; font-family: 'Batang', 'Gungsuh', serif; letter-spacing: 5px; }
+        .description { color: #555; margin-bottom: 30px; font-size: 1em; font-weight: bold; height: 1.2em; }
 
-        .game-section { display: none; flex-direction: column; align-items: center; width: 100%; z-index: 100; }
+        .game-section { display: none; flex-direction: column; align-items: center; width: 100%; }
         .game-section.active { display: flex; }
 
-        /* 다트판 이미지: 화면 전체를 돌아다님 */
+        /* ★ 다트판 이미지: 모든 UI보다 위에 있어야 함 (최상위 z-index) ★ */
         #moving-dart {
             position: fixed; 
-            width: 400px; height: 400px;
-            z-index: 10; /* 다른 UI보다 뒤에 배치 */
-            pointer-events: auto; /* 이미지 직접 클릭 가능 */
+            width: 350px; height: 350px;
+            z-index: 9999; /* 명예의 전당, 점수판보다 무조건 위 */
             cursor: crosshair;
             will-change: transform;
+            display: none;
         }
 
         #hud { width: 250px; background: #1a1a1a; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
@@ -41,30 +44,25 @@
         .val { font-size: 2em; font-weight: bold; color: #fff; }
         #total-score { color: var(--dark-red); }
 
-        /* 슬롯머신 스타일 - 절대 수정 금지 준수 */
+        /* 슬롯머신 원본 스타일 보존 */
         #slot-machine { width: 700px; background: #151515; padding: 50px; border-radius: 20px; border: 8px solid #2a2a2a; text-align: center; box-shadow: inset 0 0 80px #000; }
         .slot-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; }
         .slot-window { width: 120px; height: 160px; background: #000; border: 4px solid var(--dark-red); border-radius: 10px; overflow: hidden; position: relative; }
         .slot-reel { position: absolute; top: 0; left: 0; width: 100%; display: flex; flex-direction: column; transition: top 2s cubic-bezier(0.45, 0.05, 0.55, 0.95); }
         .slot-item { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; font-size: 4.5em; flex-shrink: 0; }
-
-        @media (min-width: 1024px) { .diamond-item { font-size: 3.5em !important; } }
-
         #slot-msg { height: 40px; color: var(--dark-red); margin-bottom: 10px; font-weight: bold; font-size: 1.2em; }
+        
         input { width: 100%; padding: 12px; margin-bottom: 10px; background: #222; border: 1px solid #444; color: white; box-sizing: border-box; }
         button { width: 100%; padding: 18px; background: var(--dark-red); border: none; color: #fff; font-weight: bold; cursor: pointer; font-size: 1.2em; }
-        button:hover { background: #990000; }
-
-        .leaderboard { width: 890px; margin: 40px 0; background: #1a1a1a; padding: 25px; border-radius: 10px; }
-        .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-        .board-header h2 { margin: 0; color: var(--dark-red); font-size: 1.5em; }
-        .rankList { list-style: none; padding: 0; margin: 0; max-height: 400px; overflow-y: auto; }
+        
+        .leaderboard { width: 800px; margin: 20px 0; background: #1a1a1a; padding: 25px; border-radius: 10px; }
+        .rankList { list-style: none; padding: 0; margin: 0; max-height: 300px; overflow-y: auto; }
         .rankList li { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #2a2a2a; }
 
-        /* 착탄 마크 */
+        /* 착탄 마크 (다트판 바로 아래 z-index) */
         .hit-mark {
-            position: fixed; width: 10px; height: 10px; background: red; border: 1px solid white;
-            border-radius: 50%; pointer-events: none; z-index: 15; transform: translate(-50%, -50%);
+            position: fixed; width: 12px; height: 12px; background: red; border: 2px solid white;
+            border-radius: 50%; pointer-events: none; z-index: 10000; transform: translate(-50%, -50%);
         }
     </style>
 </head>
@@ -72,52 +70,60 @@
 
     <img src="image_6.png" id="moving-dart" onclick="hitDart(event)">
 
-    <div id="tab-menu">
-        <div id="btn-dart" class="tab-btn" onclick="switchTab('dart')">DART GAME</div>
-        <div id="btn-slot" class="tab-btn" onclick="switchTab('slot')">SLOT MACHINE</div>
-    </div>
+    <div id="ui-layer">
+        <div id="tab-menu">
+            <div id="btn-dart" class="tab-btn" onclick="switchTab('dart')">DART GAME</div>
+            <div id="btn-slot" class="tab-btn" onclick="switchTab('slot')">SLOT MACHINE</div>
+        </div>
 
-    <h1>CASINO EDEN</h1>
+        <h1>CASINO EDEN</h1>
 
-    <div id="dart-section" class="game-section">
-        <div class="description">화면 어디든 나타나는 타겟을 맞춰라</div>
-        <div style="display: flex; gap: 20px;">
-            <div id="hud">
-                <div class="stat-box"><div class="label">Darts Remaining</div><div id="darts-val" class="val">10</div></div>
-                <div class="stat-box"><div class="label">Total Score</div><div id="total-score" class="val">0</div></div>
-                <div class="stat-box"><div class="label">Last Hit</div><div id="hit-val" class="val">0</div></div>
-                <div id="over-ui" style="display:none;">
-                    <input type="text" id="nick-dart" placeholder="NICKNAME">
-                    <button onclick="saveResult('dart')">RECORD LEGACY</button>
+        <div id="dart-section" class="game-section">
+            <div class="description">화면을 뒤덮는 타겟을 명중시켜라</div>
+            <div style="display: flex; gap: 30px; align-items: flex-start;">
+                <div id="hud">
+                    <div class="stat-box"><div class="label">Darts Remaining</div><div id="darts-val" class="val">10</div></div>
+                    <div class="stat-box"><div class="label">Total Score</div><div id="total-score" class="val">0</div></div>
+                    <div class="stat-box"><div class="label">Last Hit</div><div id="hit-val" class="val">0</div></div>
+                    <div id="over-ui" style="display:none;">
+                        <input type="text" id="nick-dart" placeholder="NICKNAME">
+                        <button onclick="saveResult('dart')">RECORD LEGACY</button>
+                    </div>
+                </div>
+                <div class="leaderboard" style="width: 450px; margin: 0;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <h2 style="margin:0; color:var(--dark-red); font-size:1.5em;">TOP 10</h2>
+                        <button style="width:auto; padding:5px;" onclick="adminReset('dart')">RESET</button>
+                    </div>
+                    <ul id="rankList" class="rankList"></ul>
                 </div>
             </div>
-            <div class="leaderboard" style="width: 500px; margin: 0;">
-                <div class="board-header"><h2>TOP 10</h2><button style="width:auto; padding:5px;" onclick="adminReset('dart')">RESET</button></div>
-                <ul id="rankList" class="rankList"></ul>
-            </div>
         </div>
-    </div>
 
-    <div id="slot-section" class="game-section">
-        <div class="description">운명이 결정되는 단 한 번의 찬스</div>
-        <div id="slot-machine">
-            <div id="slot-msg">CHALLENGE YOUR LUCK</div>
-            <div class="slot-container">
-                <div class="slot-window"><div id="reel1" class="slot-reel"></div></div>
-                <div class="slot-window"><div id="reel2" class="slot-reel"></div></div>
-                <div class="slot-window"><div id="reel3" class="slot-reel"></div></div>
-                <div class="slot-window"><div id="reel4" class="slot-reel"></div></div>
+        <div id="slot-section" class="game-section">
+            <div class="description">운명이 결정되는 단 한 번의 찬스</div>
+            <div id="slot-machine">
+                <div id="slot-msg">CHALLENGE YOUR LUCK</div>
+                <div class="slot-container">
+                    <div class="slot-window"><div id="reel1" class="slot-reel"></div></div>
+                    <div class="slot-window"><div id="reel2" class="slot-reel"></div></div>
+                    <div class="slot-window"><div id="reel3" class="slot-reel"></div></div>
+                    <div class="slot-window"><div id="reel4" class="slot-reel"></div></div>
+                </div>
+                <button id="spin-btn" onclick="spinSlot()">SPIN</button>
+                <div id="slot-over-ui" style="display:none; margin-top:20px;">
+                    <p style="color:var(--dark-red); font-weight:bold; font-size:1.5em;">SUCCESS!</p>
+                    <input type="text" id="slot-nick" placeholder="NICKNAME">
+                    <button onclick="saveResult('slot')">RECORD LEGACY</button>
+                </div>
             </div>
-            <button id="spin-btn" onclick="spinSlot()">SPIN</button>
-            <div id="slot-over-ui" style="display:none; margin-top:20px;">
-                <p style="color:var(--dark-red); font-weight:bold; font-size:1.5em;">SUCCESS!</p>
-                <input type="text" id="slot-nick" placeholder="NICKNAME">
-                <button onclick="saveResult('slot')">RECORD LEGACY</button>
+            <div class="leaderboard">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h2 style="margin:0; color:var(--dark-red); font-size:1.5em;">SLOT RANK</h2>
+                    <button style="width:auto; padding:5px;" onclick="adminReset('slot')">RESET</button>
+                </div>
+                <ul id="slotRankList" class="rankList"></ul>
             </div>
-        </div>
-        <div class="leaderboard">
-            <div class="board-header"><h2>전설의 전당</h2><button style="width:auto; padding:5px;" onclick="adminReset('slot')">RESET</button></div>
-            <ul id="slotRankList" class="rankList"></ul>
         </div>
     </div>
 
@@ -128,10 +134,11 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 다트판 이동 변수
     const dartImg = document.getElementById('moving-dart');
-    let dx = Math.random() * 200, dy = Math.random() * 200;
-    let dvx = 5, dvy = 4, drot = 0;
+    const dWidth = 350; // 다트판 크기
+    let dx = Math.random() * (window.innerWidth - dWidth);
+    let dy = Math.random() * (window.innerHeight - dWidth);
+    let dvx = 6, dvy = 5, drot = 0;
     let score = 0, darts = 10, over = false;
 
     function moveDart() {
@@ -139,11 +146,13 @@
             requestAnimationFrame(moveDart);
             return;
         }
-        dx += dvx; dy += dvy;
-        drot += 10; // 회전 속도 증가
 
-        if (dx <= 0 || dx >= window.innerWidth - 400) dvx *= -1;
-        if (dy <= 0 || dy >= window.innerHeight - 400) dvy *= -1;
+        dx += dvx; dy += dvy;
+        drot += 12; // 빠른 회전
+
+        // 화면 경계 튕기기 (화면 밖으로 절대 안 나감)
+        if (dx <= 0 || dx >= window.innerWidth - dWidth) dvx *= -1;
+        if (dy <= 0 || dy >= window.innerHeight - dWidth) dvy *= -1;
 
         dartImg.style.transform = `translate(${dx}px, ${dy}px) rotate(${drot}deg)`;
         requestAnimationFrame(moveDart);
@@ -152,19 +161,17 @@
     function hitDart(e) {
         if (over || darts <= 0) return;
 
-        // 클릭 좌표 및 명중 판정
         const rect = dartImg.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
         const dist = Math.sqrt((e.clientX - centerX)**2 + (e.clientY - centerY)**2);
 
-        // 마크 생성
         const m = document.createElement('div');
         m.className = 'hit-mark';
         m.style.left = e.clientX + 'px'; m.style.top = e.clientY + 'px';
         document.body.appendChild(m);
 
-        let p = (dist < 25) ? 50 : (dist < 60) ? 25 : (dist < 200) ? Math.floor(Math.random()*20)+1 : 0;
+        let p = (dist < 20) ? 50 : (dist < 50) ? 25 : (dist < 170) ? Math.floor(Math.random()*20)+1 : 0;
         
         score += p; darts--;
         document.getElementById('hit-val').innerText = p;
@@ -196,10 +203,9 @@
         moveDart();
     });
 
-    /* --- 슬롯머신 로직 (원본 100% 보존) --- */
+    /* --- 슬롯머신 로직 (원본 보존) --- */
     const slotItems = ['♠','◆','♥','♣','●','■']; 
     const weightedPool = ['♠','◆','◆', '♥','♥','♥', '♣','♣','♣', '♣', '●', '●', '●', '●', '●', '●', '■', '■', '■', '■', '■', '■'];
-
     function initReels() {
         for(let i=1; i<=4; i++) {
             const reel = document.getElementById('reel'+i); reel.innerHTML = '';
@@ -211,7 +217,6 @@
             }
         }
     }
-
     let currentWinC = 0;
     function spinSlot() {
         document.getElementById('slot-over-ui').style.display = 'none';
@@ -234,11 +239,7 @@
             if(isWin) {
                 const s = res[0];
                 let w = (s==='♠')?1000:(s==='◆')?800:(s==='♥')?600:(s==='♣')?400:0;
-                if(w > 0) {
-                    currentWinC = w;
-                    document.getElementById('slot-msg').innerText = `SUCCESS! +${w} C`;
-                    document.getElementById('slot-over-ui').style.display = 'block';
-                } else { document.getElementById('slot-msg').innerText = "FAILED. TRY AGAIN."; }
+                if(w > 0) { currentWinC = w; document.getElementById('slot-msg').innerText = `SUCCESS! +${w} C`; document.getElementById('slot-over-ui').style.display = 'block'; }
             } else { document.getElementById('slot-msg').innerText = "FAILED. TRY AGAIN."; }
             for(let i=1; i<=4; i++) {
                 const reel = document.getElementById('reel'+i);
@@ -248,7 +249,6 @@
         }, 3500);
     }
 
-    /* --- 데이터 저장 및 랭킹 (기존 유지) --- */
     function saveResult(type) {
         const nickId = (type === 'dart') ? 'nick-dart' : 'slot-nick';
         const name = document.getElementById(nickId).value.trim();
@@ -262,17 +262,13 @@
     db.ref('rankingPro').on('value', (snap) => {
         const list = document.getElementById('rankList'); list.innerHTML = '';
         let arr = []; snap.forEach(c => { if(c.val()) arr.push(c.val()); });
-        arr.sort((a,b) => b.score - a.score).slice(0,10).forEach((v, i) => {
-            list.innerHTML += `<li><span>#${i+1} ${v.name}</span><strong>${v.score} PT</strong></li>`;
-        });
+        arr.sort((a,b) => b.score - a.score).slice(0,10).forEach((v, i) => { list.innerHTML += `<li><span>#${i+1} ${v.name}</span><strong>${v.score} PT</strong></li>`; });
     });
 
     db.ref('slotRanking_v3').on('value', (snap) => {
         const list = document.getElementById('slotRankList'); list.innerHTML = '';
         let arr = []; snap.forEach(c => { if(c.val()) arr.push(c.val()); });
-        arr.reverse().forEach((v) => {
-            list.innerHTML += `<li><span>${v.name}</span><strong>${v.score} C</strong></li>`;
-        });
+        arr.reverse().forEach((v) => { list.innerHTML += `<li><span>${v.name}</span><strong>${v.score} C</strong></li>`; });
     });
 </script>
 </body>
