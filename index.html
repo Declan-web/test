@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>CASINO EDEN - OFFICIAL</title>
+    <title>CASINO EDEN - EXTREME EDITION</title>
     <style>
         :root {
             --dark-red: #7a0000;
@@ -75,6 +75,11 @@
         #slot-msg { height: 40px; color: var(--dark-red); margin-bottom: 10px; font-weight: bold; font-size: 1.2em; }
         
         .leaderboard { width: 850px; margin-top: 30px; background: var(--glass-bg); padding: 30px; border-radius: 15px; border: 1px solid #222; }
+        .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        .board-header h2 { margin: 0; color: var(--dark-red); font-size: 1.6em; }
+        .reset-btn { width: auto !important; padding: 5px 15px !important; font-size: 0.8em !important; background: transparent !important; border: 1px solid #444 !important; color: #666 !important; }
+        .reset-btn:hover { border-color: var(--neon-red) !important; color: white !important; }
+
         .rankList { list-style: none; padding: 0; margin: 0; max-height: 350px; overflow-y: auto; }
         .rankList li { display: flex; justify-content: space-between; padding: 14px; border-bottom: 1px solid #1a1a1a; }
         
@@ -108,6 +113,10 @@
                     </div>
                 </div>
                 <div class="leaderboard" style="width: 500px; margin-top: 0;">
+                    <div class="board-header">
+                        <h2>TOP 10</h2>
+                        <button class="reset-btn" onclick="adminReset('dart')">RESET</button>
+                    </div>
                     <ul id="rankList" class="rankList"></ul>
                 </div>
             </div>
@@ -130,6 +139,10 @@
                 </div>
             </div>
             <div class="leaderboard">
+                <div class="board-header">
+                    <h2>SLOT LEGENDS</h2>
+                    <button class="reset-btn" onclick="adminReset('slot')">RESET</button>
+                </div>
                 <ul id="slotRankList" class="rankList"></ul>
             </div>
         </div>
@@ -146,7 +159,12 @@
     const cursor = document.getElementById('custom-cursor');
     const dSize = 420; 
     let posX = Math.random() * (window.innerWidth - dSize), posY = Math.random() * (window.innerHeight - dSize);
-    let vx = 15, vy = 13, rot = 0;
+    
+    // 속도 극한 상향 (기존 15 -> 28~32 랜덤)
+    let vx = (Math.random() * 4 + 28) * (Math.random() > 0.5 ? 1 : -1);
+    let vy = (Math.random() * 4 + 28) * (Math.random() > 0.5 ? 1 : -1);
+    let rot = 0;
+    
     let score = 0, darts = 10, over = false, currentWinC = 0;
     let mx = 0, my = 0, sx = 0, sy = 0;
 
@@ -164,9 +182,18 @@
         if (over || !document.getElementById('dart-section').classList.contains('active')) {
             requestAnimationFrame(moveDart); return;
         }
-        posX += vx; posY += vy; rot += 18;
-        if (posX <= 0 || posX >= window.innerWidth - dSize) vx *= -1;
-        if (posY <= 0 || posY >= window.innerHeight - dSize) vy *= -1;
+        posX += vx; posY += vy; rot += 35; // 회전 속도 상향
+        
+        // 벽 충돌 시 속도 미세 변화로 패턴 파괴
+        if (posX <= 0 || posX >= window.innerWidth - dSize) {
+            vx *= -1.02; // 충돌 시 약간 가속
+            if(Math.abs(vx) > 45) vx = vx > 0 ? 35 : -35; // 최대 속도 제한
+        }
+        if (posY <= 0 || posY >= window.innerHeight - dSize) {
+            vy *= -1.02;
+            if(Math.abs(vy) > 45) vy = vy > 0 ? 35 : -35;
+        }
+        
         dartImg.style.transform = `translate(${posX}px, ${posY}px) rotate(${rot}deg)`;
         requestAnimationFrame(moveDart);
     }
@@ -264,6 +291,8 @@
             if(!err) { alert("RECORDED!"); location.reload(); }
         });
     }
+
+    function adminReset(type) { if(prompt("PASS?") === "1119") db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').remove(); }
 
     db.ref('rankingPro').on('value', (snap) => {
         const list = document.getElementById('rankList'); list.innerHTML = '';
