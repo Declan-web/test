@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>CASINO EDEN - TRUE FULLSCREEN</title>
+    <title>CASINO EDEN - UNSTABLE AIM</title>
     <style>
         :root {
             --dark-red: #7a0000;
@@ -13,16 +13,17 @@
             margin: 0; background-color: var(--deep-black); color: white; 
             font-family: 'Arial', sans-serif; display: flex; flex-direction: column; align-items: center; 
             overflow: hidden; width: 100vw; height: 100vh; position: relative;
+            cursor: none; /* 기본 커서를 숨기고 커스텀 커서 사용 */
         }
         
         #ui-layer { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; width: 100%; pointer-events: none; }
-        #ui-layer * { pointer-events: auto; } /* UI 요소들은 클릭 가능하게 */
+        #ui-layer * { pointer-events: auto; }
 
         #tab-menu { display: flex; gap: 10px; margin-top: 20px; }
         .tab-btn { padding: 10px 30px; background: #222; border: 1px solid #444; color: #888; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .tab-btn.active { background: var(--dark-red); color: #fff; border-color: var(--dark-red); }
 
-        h1 { color: var(--dark-red); font-size: 3.5em; margin-top: 20px; margin-bottom: 5px; font-family: 'Batang', 'Gungsuh', serif; letter-spacing: 5px; text-shadow: 0 0 20px rgba(0,0,0,1); }
+        h1 { color: var(--dark-red); font-size: 3.5em; margin-top: 20px; margin-bottom: 5px; font-family: 'Batang', 'Gungsuh', serif; letter-spacing: 5px; }
         .description { color: #555; margin-bottom: 30px; font-size: 1em; font-weight: bold; height: 1.2em; }
 
         .game-section { display: none; flex-direction: column; align-items: center; width: 100%; }
@@ -33,10 +34,28 @@
             position: fixed; 
             width: 450px; height: 450px;
             z-index: 9999;
-            cursor: crosshair;
             will-change: transform;
             display: none;
-            top: 0; left: 0; /* 초기 위치 고정 후 transform으로 이동 */
+            top: 0; left: 0;
+        }
+
+        /* 흔들리는 커서 스타일 */
+        #custom-cursor {
+            position: fixed;
+            width: 30px; height: 30px;
+            border: 2px solid white;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10002;
+            transform: translate(-50%, -50%);
+        }
+        #custom-cursor::after {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            width: 100%; height: 2px; background: white; transform: translate(-50%, -50%);
+        }
+        #custom-cursor::before {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            width: 2px; height: 100%; background: white; transform: translate(-50%, -50%);
         }
 
         #hud { width: 250px; background: #1a1a1a; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); }
@@ -44,7 +63,7 @@
         .label { color: #aaa; font-size: 0.8em; margin-bottom: 5px; text-transform: uppercase; }
         .val { font-size: 2em; font-weight: bold; color: #fff; }
 
-        #slot-machine { width: 700px; background: #151515; padding: 50px; border-radius: 20px; border: 8px solid #2a2a2a; text-align: center; box-shadow: inset 0 0 80px #000; }
+        #slot-machine { width: 700px; background: #151515; padding: 50px; border-radius: 20px; border: 8px solid #2a2a2a; text-align: center; }
         .slot-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; }
         .slot-window { width: 120px; height: 160px; background: #000; border: 4px solid var(--dark-red); border-radius: 10px; overflow: hidden; position: relative; }
         .slot-reel { position: absolute; top: 0; left: 0; width: 100%; display: flex; flex-direction: column; transition: top 2s cubic-bezier(0.45, 0.05, 0.55, 0.95); }
@@ -62,6 +81,7 @@
 </head>
 <body>
 
+    <div id="custom-cursor"></div>
     <img src="image_6.png" id="moving-dart" onclick="hitDart(event)">
 
     <div id="ui-layer">
@@ -73,7 +93,7 @@
         <h1>CASINO EDEN</h1>
 
         <div id="dart-section" class="game-section">
-            <div class="description">화면 전체를 누비는 타겟을 저격하라</div>
+            <div class="description">흔들리는 시야, 예측 불가 타겟: 극한의 조준</div>
             <div style="display: flex; gap: 30px; align-items: flex-start;">
                 <div id="hud">
                     <div class="stat-box"><div class="label">Darts Remaining</div><div id="darts-val" class="val">10</div></div>
@@ -120,23 +140,43 @@
     const db = firebase.database();
 
     const dartImg = document.getElementById('moving-dart');
+    const cursor = document.getElementById('custom-cursor');
     const dSize = 450; 
     let posX = Math.random() * (window.innerWidth - dSize);
     let posY = Math.random() * (window.innerHeight - dSize);
     
-    // 속도 설정 (예측 불가능성 강화)
-    let vx = 12; 
-    let vy = 10; 
-    let rot = 0;
+    let vx = 14; let vy = 12; let rot = 0;
     let score = 0, darts = 10, over = false;
 
-    // 무작위 이동 강화 로직
+    // 커서 흔들림 변수
+    let mouseX = 0, mouseY = 0;
+    let shakeX = 0, shakeY = 0;
+
+    // 마우스 위치 추적 및 흔들림 적용
+    window.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+    });
+
+    function updateCursor() {
+        // 노이즈 같은 무작위 흔들림 생성
+        shakeX += (Math.random() - 0.5) * 15;
+        shakeY += (Math.random() - 0.5) * 15;
+        
+        // 흔들림이 너무 멀리 가지 않도록 감쇠
+        shakeX *= 0.9;
+        shakeY *= 0.9;
+
+        cursor.style.left = (mouseX + shakeX) + 'px';
+        cursor.style.top = (mouseY + shakeY) + 'px';
+        requestAnimationFrame(updateCursor);
+    }
+
     function randomizeMovement() {
         if(over) return;
-        // 속도와 방향을 주기적으로 완전히 랜덤화 (0.8초~2초 사이)
-        vx = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 10 + 8);
-        vy = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 10 + 8);
-        setTimeout(randomizeMovement, Math.random() * 1200 + 800);
+        vx = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 15 + 10);
+        vy = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 15 + 10);
+        setTimeout(randomizeMovement, Math.random() * 1000 + 500);
     }
 
     function moveDart() {
@@ -146,9 +186,9 @@
         }
 
         posX += vx; posY += vy;
-        rot += 15;
+        rot += 20;
 
-        // 벽 충돌 판정 (화면 밖으로 나가지 않게 강제 고정)
+        // 벽 충돌 (완벽한 화면 내부 고정)
         if (posX <= 0) { posX = 0; vx = Math.abs(vx); }
         if (posX >= window.innerWidth - dSize) { posX = window.innerWidth - dSize; vx = -Math.abs(vx); }
         if (posY <= 0) { posY = 0; vy = Math.abs(vy); }
@@ -161,9 +201,12 @@
     function hitDart(e) {
         if (over || darts <= 0) return;
 
+        // 흔들린 커서 위치가 아니라 실제 클릭 시점의 판정이 필요함 (난이도 요소)
         const rect = dartImg.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
+        
+        // 실제 마우스 클릭 위치 기준 판정
         const dist = Math.sqrt((e.clientX - centerX)**2 + (e.clientY - centerY)**2);
 
         const m = document.createElement('div');
@@ -185,6 +228,8 @@
             over = true;
             dartImg.style.display = 'none';
             document.getElementById('over-ui').style.display = 'block';
+            document.body.style.cursor = 'auto'; // 게임 종료 후 커서 복구
+            cursor.style.display = 'none';
         }
     }
 
@@ -196,7 +241,11 @@
         for(let i=0; i<btns.length; i++) btns[i].classList.remove('active');
         document.getElementById(game + '-section').classList.add('active');
         document.getElementById('btn-' + game).classList.add('active');
-        dartImg.style.display = (game === 'dart' && !over) ? 'block' : 'none';
+        
+        const isDart = (game === 'dart' && !over);
+        dartImg.style.display = isDart ? 'block' : 'none';
+        cursor.style.display = isDart ? 'block' : 'none';
+        document.body.style.cursor = isDart ? 'none' : 'auto';
     }
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -204,10 +253,11 @@
         switchTab(savedTab);
         initReels();
         moveDart();
+        updateCursor();
         randomizeMovement();
     });
 
-    /* --- 슬롯머신 원본 로직 유지 --- */
+    /* --- 슬롯머신 로직 (보존) --- */
     const slotItems = ['♠','◆','♥','♣','●','■']; 
     const weightedPool = ['♠','◆','◆', '♥','♥','♥', '♣','♣','♣', '♣', '●', '●', '●', '●', '●', '●', '■', '■', '■', '■', '■', '■'];
     function initReels() {
