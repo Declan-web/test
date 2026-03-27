@@ -16,9 +16,10 @@
             font-family: 'Pretendard', sans-serif; 
             display: flex; flex-direction: column; align-items: center; 
             overflow: hidden; width: 100vw; height: 100vh; position: relative;
-            cursor: none; 
+            cursor: none; /* 기본 커서 숨김 */
         }
         
+        /* 커서 스타일 */
         #custom-cursor {
             position: fixed; width: 40px; height: 40px;
             border: 2px solid var(--neon-red); border-radius: 50%;
@@ -31,11 +32,13 @@
         #custom-cursor::after { width: 100%; height: 1px; }
         #custom-cursor::before { width: 1px; height: 100%; }
 
+        /* 움직이는 다트 이미지 */
         #moving-dart {
             position: fixed; width: 420px; height: 420px;
-            z-index: 9999; will-change: transform;
+            z-index: 5; will-change: transform;
             display: none; top: 0; left: 0;
             filter: drop-shadow(0 0 30px rgba(0,0,0,1));
+            pointer-events: none; /* 클릭 방해 금지 */
         }
 
         #ui-layer { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; width: 100%; pointer-events: none; }
@@ -45,8 +48,8 @@
         .tab-btn { padding: 12px 35px; background: #1a1a1a; border: 1px solid #333; color: #666; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .tab-btn.active { background: var(--dark-red); color: #fff; border-color: var(--neon-red); box-shadow: 0 0 15px var(--dark-red); }
 
-        h1 { color: var(--dark-red); font-size: 4em; margin-top: 25px; margin-bottom: 5px; font-family: 'Gungsuh', serif; letter-spacing: 8px; }
-        .description { color: #444; margin-bottom: 30px; font-size: 1.1em; font-weight: bold; letter-spacing: 2px; }
+        h1 { color: var(--dark-red); font-size: 4em; margin-top: 25px; margin-bottom: 5px; font-family: 'Gungsuh', serif; letter-spacing: 8px; pointer-events: none; }
+        .description { color: #444; margin-bottom: 30px; font-size: 1.1em; font-weight: bold; letter-spacing: 2px; pointer-events: none; }
 
         .game-section { display: none; flex-direction: column; align-items: center; width: 100%; }
         .game-section.active { display: flex; }
@@ -57,7 +60,6 @@
         .val { font-size: 2.2em; font-weight: bold; }
         #total-score { color: var(--neon-red); }
 
-        /* 슬롯머신 스타일 (두 번째 코드 기준) */
         #slot-machine { width: 700px; background: #151515; padding: 50px; border-radius: 20px; border: 8px solid #2a2a2a; text-align: center; box-shadow: inset 0 0 80px #000; }
         .slot-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; }
         .slot-window { width: 120px; height: 160px; background: #000; border: 4px solid var(--dark-red); border-radius: 10px; overflow: hidden; position: relative; }
@@ -76,15 +78,14 @@
         
         input { width: 100%; padding: 15px; margin-bottom: 15px; background: #111; border: 1px solid #333; color: white; border-radius: 8px; box-sizing: border-box; }
         button { width: 100%; padding: 20px; background: var(--dark-red); border: none; color: #fff; font-weight: bold; cursor: pointer; font-size: 1.2em; border-radius: 8px; }
-        button:hover { background: #990000; }
 
         .hit-mark { position: fixed; width: 10px; height: 10px; background: var(--neon-red); border: 1px solid white; border-radius: 50%; pointer-events: none; z-index: 10001; transform: translate(-50%, -50%); }
     </style>
 </head>
-<body>
+<body onmousedown="handleGlobalClick(event)">
 
     <div id="custom-cursor"></div>
-    <img src="image_6.png" id="moving-dart" onclick="hitDart(event)">
+    <img src="image_6.png" id="moving-dart">
 
     <div id="ui-layer">
         <div id="tab-menu">
@@ -114,7 +115,6 @@
         </div>
 
         <div id="slot-section" class="game-section">
-            <div class="description">운명이 결정되는 단 한 번의 찬스</div>
             <div id="slot-machine">
                 <div id="slot-msg">CHALLENGE YOUR LUCK</div>
                 <div class="slot-container">
@@ -144,7 +144,6 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    /* --- 다트 게임 로직 (첫 번째 코드 그대로) --- */
     const dartImg = document.getElementById('moving-dart');
     const cursor = document.getElementById('custom-cursor');
     const dSize = 420; 
@@ -153,11 +152,17 @@
     let score = 0, darts = 10, over = false, currentWinC = 0;
     let mx = 0, my = 0, sx = 0, sy = 0;
 
-    window.onmousemove = (e) => { mx = e.clientX; my = e.clientY; };
+    window.onmousemove = (e) => { 
+        mx = e.clientX; 
+        my = e.clientY; 
+    };
+
     function updateCursor() {
+        // 커서 흔들림 효과
         sx += (Math.random() - 0.5) * 20; sy += (Math.random() - 0.5) * 20;
         sx *= 0.9; sy *= 0.9;
-        cursor.style.left = (mx + sx) + 'px'; cursor.style.top = (my + sy) + 'px';
+        cursor.style.left = (mx + sx) + 'px'; 
+        cursor.style.top = (my + sy) + 'px';
         requestAnimationFrame(updateCursor);
     }
 
@@ -172,27 +177,46 @@
         requestAnimationFrame(moveDart);
     }
 
-    function hitDart(e) {
-        if (over || darts <= 0) return;
+    // 전역 클릭 핸들러 (다트 게임 활성화 시에만 작동)
+    function handleGlobalClick(e) {
+        if (!document.getElementById('dart-section').classList.contains('active') || over || darts <= 0) return;
+        
+        // 클릭이 UI 버튼이나 입력창 위에서 발생했다면 무시
+        if (e.target.closest('#ui-layer')) return;
+
+        // 실제 조준점 위치 (흔들림 포함)
+        const targetX = mx + sx;
+        const targetY = my + sy;
+
         const rect = dartImg.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
-        const dist = Math.sqrt((e.clientX - centerX)**2 + (e.clientY - centerY)**2);
+        
+        // 거리 계산
+        const dist = Math.sqrt((targetX - centerX)**2 + (targetY - centerY)**2);
 
-        const m = document.createElement('div'); m.className = 'hit-mark';
-        m.style.left = e.clientX + 'px'; m.style.top = e.clientY + 'px';
+        // 시각적 피드백 (히트 마크)
+        const m = document.createElement('div'); 
+        m.className = 'hit-mark';
+        m.style.left = targetX + 'px'; 
+        m.style.top = targetY + 'px';
         document.body.appendChild(m);
+        setTimeout(() => m.remove(), 1000);
 
-        let p = (dist < 15) ? 50 : (dist < 45) ? 25 : (dist < 200) ? Math.floor(Math.random() * 15) + 1 : 0;
+        // 점수 판정
+        let p = (dist < 20) ? 50 : (dist < 60) ? 25 : (dist < 180) ? Math.floor(Math.random() * 15) + 1 : 0;
         score += p; darts--;
+        
         document.getElementById('hit-val').innerText = p;
         document.getElementById('total-score').innerText = score;
         document.getElementById('darts-val').innerText = darts;
 
         if (darts <= 0) {
-            over = true; dartImg.style.display = 'none';
+            over = true; 
+            dartImg.style.display = 'none';
             document.getElementById('over-ui').style.display = 'block';
-            document.body.style.cursor = 'auto'; cursor.style.display = 'none';
+            document.body.style.cursor = 'auto'; 
+            cursor.style.display = 'none';
         }
     }
 
@@ -248,7 +272,6 @@
         }, 3500);
     }
 
-    /* --- 공통 기능 및 저장 로직 --- */
     function switchTab(game) {
         localStorage.setItem('activeGameTab', game); 
         document.querySelectorAll('.game-section').forEach(s => s.classList.remove('active'));
@@ -263,22 +286,15 @@
 
     function saveResult(type) {
         const nickId = (type === 'dart') ? 'nick-dart' : 'slot-nick';
-        const btnId = (type === 'dart') ? 'save-dart-btn' : 'save-slot-btn';
         const name = document.getElementById(nickId).value.trim();
-        const btn = document.getElementById(btnId);
         if(!name) return alert("NICKNAME PLEASE");
-        btn.disabled = true;
         const finalScore = (type === 'dart') ? score : currentWinC;
         const path = (type === 'dart') ? 'rankingPro' : 'slotRanking_v3';
         db.ref(path).push().set({ name, score: parseInt(finalScore), date: firebase.database.ServerValue.TIMESTAMP }, (err) => {
-            if(err) { alert("FAILED"); btn.disabled = false; }
+            if(err) alert("FAILED");
             else {
                 alert("RECORDED!");
-                if(type === 'dart') location.reload();
-                else {
-                    document.getElementById('slot-over-ui').style.display = 'none';
-                    document.getElementById(nickId).value = ''; btn.disabled = false;
-                }
+                location.reload();
             }
         });
     }
@@ -296,7 +312,7 @@
     db.ref('slotRanking_v3').on('value', (snap) => {
         const list = document.getElementById('slotRankList'); list.innerHTML = '';
         let arr = []; snap.forEach(c => arr.push(c.val()));
-        arr.reverse().forEach(v => {
+        arr.reverse().slice(0,10).forEach(v => {
             list.innerHTML += `<li><span>${v.name}</span><strong>${v.score} C</strong></li>`;
         });
     });
