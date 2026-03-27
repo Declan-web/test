@@ -2,28 +2,16 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>CASINO EDEN - CHAOS MODE</title>
+    <title>CASINO EDEN - EXTREME CHAOS</title>
     <style>
         :root {
             --dark-red: #7a0000;
             --deep-black: #0d0d0d;
         }
 
-        /* 전체 배경은 고정 */
         body { 
             margin: 0; background-color: var(--deep-black); color: white; 
-            font-family: 'Arial', sans-serif; overflow: hidden; /* 스크롤 방지 */
-            width: 100vw; height: 100vh; position: relative;
-        }
-
-        /* 움직이는 전체 게임 월드 */
-        #game-world {
-            position: absolute;
-            width: 950px; /* 전체 요소 폭에 맞춤 */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            will-change: transform;
+            font-family: 'Arial', sans-serif; display: flex; flex-direction: column; align-items: center; 
         }
         
         #tab-menu { display: flex; gap: 10px; margin-top: 20px; }
@@ -36,7 +24,7 @@
         .game-section { display: none; flex-direction: column; align-items: center; }
         .game-section.active { display: flex; }
 
-        /* 다트판 캔버스 */
+        /* 다트판 캔버스 영역 */
         #canvas-wrapper { position: relative; width: 600px; height: 600px; border: 10px solid #222; overflow: hidden; cursor: none; background: #000; }
         #hud { width: 250px; background: #1a1a1a; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         .stat-box { margin-bottom: 20px; }
@@ -44,7 +32,7 @@
         .val { font-size: 2em; font-weight: bold; color: #fff; }
         #total-score { color: var(--dark-red); }
 
-        /* 슬롯머신 스타일 유지 */
+        /* 슬롯머신 - 원본 유지 */
         #slot-machine { width: 700px; background: #151515; padding: 50px; border-radius: 20px; border: 8px solid #2a2a2a; text-align: center; box-shadow: inset 0 0 80px #000; }
         .slot-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; }
         .slot-window { width: 120px; height: 160px; background: #000; border: 4px solid var(--dark-red); border-radius: 10px; overflow: hidden; position: relative; }
@@ -65,7 +53,6 @@
 </head>
 <body>
 
-<div id="game-world">
     <div id="tab-menu">
         <div id="btn-dart" class="tab-btn" onclick="switchTab('dart')">DART GAME</div>
         <div id="btn-slot" class="tab-btn" onclick="switchTab('slot')">SLOT MACHINE</div>
@@ -74,7 +61,7 @@
     <h1>CASINO EDEN</h1>
 
     <div id="dart-section" class="game-section">
-        <div class="description">전체가 요동치는 극한의 전장</div>
+        <div class="description">광란의 다트판을 정복하라</div>
         <div style="display: flex; gap: 20px;">
             <div id="canvas-wrapper"><div id="fake-cursor"></div><canvas id="dartBoard" width="600" height="600"></canvas></div>
             <div id="hud">
@@ -116,7 +103,6 @@
             <ul id="slotRankList" class="rankList"></ul>
         </div>
     </div>
-</div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -124,21 +110,6 @@
     const firebaseConfig = { apiKey: "AIzaSyC4cS9GhEAz32y9k11o5B950mbWxULZ1BY", databaseURL: "https://eden-dc2c5-default-rtdb.asia-southeast1.firebasedatabase.app" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
-    const world = document.getElementById('game-world');
-    let worldX = 0, worldY = 0, vX = 3, vY = 2.5;
-
-    function moveWorld() {
-        worldX += vX; worldY += vY;
-        const limitX = window.innerWidth - world.offsetWidth;
-        const limitY = window.innerHeight - world.offsetHeight;
-
-        if (worldX <= 0 || worldX >= limitX) vX *= -1;
-        if (worldY <= 0 || worldY >= limitY) vY *= -1;
-
-        world.style.transform = `translate(${worldX}px, ${worldY}px)`;
-        requestAnimationFrame(moveWorld);
-    }
 
     function switchTab(game) {
         localStorage.setItem('activeGameTab', game); 
@@ -156,28 +127,43 @@
         initReels();
         loop();
         windTick();
-        moveWorld(); // 전체 월드 이동 시작
     });
 
-    /* --- 다트 게임 로직 (판은 중앙 고정, 판만 회전) --- */
+    /* --- 다트 게임 로직 (최종 수정본: 판만 제멋대로 바운스 + 초고속 회전) --- */
     const cvs = document.getElementById('dartBoard'); const ctx = cvs.getContext('2d'); const img = new Image(); img.src = 'image_6.png';
     let score = 0, darts = 10, over = false, mx = 300, my = 300, rot = 0, wx = 0, wy = 0, marks = [];
     
+    // 다트판 물리 변수 (동서남북 튕기기)
+    let bx = Math.random()*300+150, by = Math.random()*300+150; // 초기 위치
+    let vx = 4.5, vy = 3.8; // 이동 속도 (빠름)
+    const bRadius = 250; // 다트판 이미지 반지름
+
     function loop() {
         if(over) return;
         ctx.clearRect(0,0,600,600); 
+
+        // 다트판 이동 (Bounce 로직)
+        bx += vx; by += vy;
+
+        // 벽 충돌 감지 (캔버스 경계 0~600)
+        if (bx + 200 > 600 || bx - 200 < 0) vx *= -1; // 이미지를 400x400으로 그릴 것이므로 여유 공간 확보
+        if (by + 200 > 600 || by - 200 < 0) vy *= -1;
+
         ctx.save(); 
-        ctx.translate(300, 300); 
-        rot += 0.3; // 다트판 회전 속도 (빠름)
+        ctx.translate(bx, by); // 움직이는 다트판 중심으로 이동
+        rot += 0.35; // 회전 속도 (매우 빠름)
         ctx.rotate(rot); 
-        ctx.drawImage(img, -250, -250, 500, 500); 
+        // 다트판 이미지 그리기 (400x400 크기로 줄여서 캔버스 안에서 움직일 공간 확보)
+        ctx.drawImage(img, -200, -200, 400, 400); 
         ctx.restore(); 
 
+        // 착탄 지점 마크 (절대 좌표)
         marks.forEach(m => { 
             ctx.beginPath(); ctx.arc(m.x, m.y, 5, 0, Math.PI*2); 
             ctx.fillStyle="rgba(255,0,0,0.7)"; ctx.fill(); ctx.stroke(); 
         }); 
 
+        // 수전증 효과 (에임 흔들림)
         window.tx = mx + (Math.random()-0.5)*150; window.ty = my + (Math.random()-0.5)*150;
         const cur = document.getElementById('fake-cursor'); 
         cur.style.left = window.tx+'px'; cur.style.top = window.ty+'px';
@@ -188,8 +174,13 @@
     cvs.onmousedown = () => {
         if(over || darts <= 0 || !document.getElementById('dart-section').classList.contains('active')) return;
         const fx = window.tx + wx, fy = window.ty + wy; marks.push({x: fx, y: fy});
-        const d = Math.sqrt((fx-300)**2 + (fy-300)**2);
-        let p = (d < 15) ? 50 : (d < 40) ? 25 : (d < 250) ? Math.floor(Math.random()*20)+1 : 0;
+        
+        // 현재 움직이는 다트판 중심(bx, by)과의 거리 계산
+        const d = Math.sqrt((fx - bx)**2 + (fy - by)**2);
+        
+        // 400x400 이미지(반지름 200) 기준 점수 판정
+        let p = (d < 15) ? 50 : (d < 35) ? 25 : (d < 190) ? Math.floor(Math.random()*20)+1 : 0;
+        
         score += p; darts--; 
         document.getElementById('hit-val').innerText = p; document.getElementById('total-score').innerText = score; document.getElementById('darts-val').innerText = darts;
         if(darts <= 0) { over = true; document.getElementById('over-ui').style.display='block'; }
