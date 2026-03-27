@@ -2,64 +2,62 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>CASINO EDEN - ELITE EDITION</title>
+    <title>CASINO EDEN - PRO EDITION</title>
     <style>
         :root {
             --dark-red: #7a0000;
             --neon-red: #ff1a1a;
             --deep-black: #0d0d0d;
-            --glass-bg: rgba(20, 20, 20, 0.85);
+            --glass-bg: rgba(15, 15, 15, 0.9);
         }
 
         body { 
             margin: 0; background-color: var(--deep-black); color: white; 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            font-family: 'Pretendard', sans-serif; 
             display: flex; flex-direction: column; align-items: center; 
             overflow: hidden; width: 100vw; height: 100vh; position: relative;
-            cursor: none; /* 기본 커서 숨김 */
+            cursor: none; 
         }
         
-        /* 커스텀 흔들리는 커서 */
         #custom-cursor {
             position: fixed; width: 40px; height: 40px;
             border: 2px solid var(--neon-red); border-radius: 50%;
             pointer-events: none; z-index: 10002; transform: translate(-50%, -50%);
             box-shadow: 0 0 15px var(--neon-red); display: none;
         }
-        #custom-cursor::after { content: ''; position: absolute; top: 50%; left: 50%; width: 100%; height: 1px; background: var(--neon-red); transform: translate(-50%, -50%); }
-        #custom-cursor::before { content: ''; position: absolute; top: 50%; left: 50%; width: 1px; height: 100%; background: var(--neon-red); transform: translate(-50%, -50%); }
+        #custom-cursor::after, #custom-cursor::before {
+            content: ''; position: absolute; top: 50%; left: 50%; background: var(--neon-red); transform: translate(-50%, -50%);
+        }
+        #custom-cursor::after { width: 100%; height: 1px; }
+        #custom-cursor::before { width: 1px; height: 100%; }
 
-        /* 다트판: 최상위 레이어 + 화면 내부 이동 */
         #moving-dart {
-            position: fixed; width: 400px; height: 400px;
-            z-index: 9999; cursor: none; will-change: transform;
+            position: fixed; width: 420px; height: 420px;
+            z-index: 9999; will-change: transform;
             display: none; top: 0; left: 0;
-            filter: drop-shadow(0 0 20px rgba(0,0,0,0.8));
+            filter: drop-shadow(0 0 30px rgba(0,0,0,1));
         }
 
-        /* 메인 UI 레이어 */
         #ui-layer { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; width: 100%; pointer-events: none; }
         #ui-layer * { pointer-events: auto; }
 
         #tab-menu { display: flex; gap: 15px; margin-top: 30px; }
-        .tab-btn { padding: 12px 35px; background: #1a1a1a; border: 1px solid #333; color: #666; cursor: pointer; font-weight: bold; transition: 0.3s; letter-spacing: 1px; }
+        .tab-btn { padding: 12px 35px; background: #1a1a1a; border: 1px solid #333; color: #666; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .tab-btn.active { background: var(--dark-red); color: #fff; border-color: var(--neon-red); box-shadow: 0 0 15px var(--dark-red); }
 
-        h1 { color: var(--dark-red); font-size: 4em; margin-top: 25px; margin-bottom: 5px; font-family: 'Gungsuh', serif; letter-spacing: 8px; text-shadow: 0 0 20px rgba(122, 0, 0, 0.5); }
-        .description { color: #444; margin-bottom: 40px; font-size: 1.1em; font-weight: bold; letter-spacing: 2px; }
+        h1 { color: var(--dark-red); font-size: 4em; margin-top: 25px; margin-bottom: 5px; font-family: 'Gungsuh', serif; letter-spacing: 8px; }
+        .description { color: #444; margin-bottom: 30px; font-size: 1.1em; font-weight: bold; letter-spacing: 2px; }
 
         .game-section { display: none; flex-direction: column; align-items: center; width: 100%; }
         .game-section.active { display: flex; }
 
-        /* HUD & Leaderboard (티토텀 스타일 계승) */
-        #hud { width: 260px; background: var(--glass-bg); padding: 25px; border-radius: 15px; border: 1px solid #222; backdrop-filter: blur(10px); }
+        #hud { width: 260px; background: var(--glass-bg); padding: 25px; border-radius: 15px; border: 1px solid #222; }
         .stat-box { margin-bottom: 25px; }
-        .label { color: #666; font-size: 0.75em; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
-        .val { font-size: 2.2em; font-weight: bold; color: #eee; }
+        .label { color: #666; font-size: 0.75em; margin-bottom: 8px; text-transform: uppercase; }
+        .val { font-size: 2.2em; font-weight: bold; }
         #total-score { color: var(--neon-red); }
 
-        /* 슬롯머신 스타일 */
-        #slot-machine { width: 700px; background: #0a0a0a; padding: 50px; border-radius: 24px; border: 2px solid #222; box-shadow: 0 0 50px rgba(0,0,0,1); text-align: center; }
+        #slot-machine { width: 700px; background: #0a0a0a; padding: 50px; border-radius: 24px; border: 2px solid #222; text-align: center; }
         .slot-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 35px; }
         .slot-window { width: 120px; height: 160px; background: #000; border: 3px solid #333; border-radius: 12px; overflow: hidden; position: relative; }
         .slot-reel { position: absolute; top: 0; left: 0; width: 100%; display: flex; flex-direction: column; transition: top 2s cubic-bezier(0.45, 0.05, 0.55, 0.95); }
@@ -67,17 +65,15 @@
 
         .leaderboard { width: 850px; margin-top: 30px; background: var(--glass-bg); padding: 30px; border-radius: 15px; border: 1px solid #222; }
         .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
-        .board-header h2 { margin: 0; color: var(--dark-red); font-size: 1.6em; letter-spacing: 2px; }
+        .board-header h2 { margin: 0; color: var(--dark-red); font-size: 1.6em; }
         
         .rankList { list-style: none; padding: 0; margin: 0; max-height: 350px; overflow-y: auto; }
-        .rankList li { display: flex; justify-content: space-between; padding: 14px; border-bottom: 1px solid #1a1a1a; font-size: 1.1em; }
-        .rankList li:last-child { border: none; }
+        .rankList li { display: flex; justify-content: space-between; padding: 14px; border-bottom: 1px solid #1a1a1a; }
         
-        input { width: 100%; padding: 15px; margin-bottom: 15px; background: #111; border: 1px solid #333; color: white; border-radius: 8px; }
-        button { width: 100%; padding: 20px; background: var(--dark-red); border: none; color: #fff; font-weight: bold; cursor: pointer; font-size: 1.2em; border-radius: 8px; transition: 0.3s; }
-        button:hover { background: var(--neon-red); box-shadow: 0 0 20px var(--dark-red); }
+        input { width: 100%; padding: 15px; margin-bottom: 15px; background: #111; border: 1px solid #333; color: white; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 20px; background: var(--dark-red); border: none; color: #fff; font-weight: bold; cursor: pointer; font-size: 1.2em; border-radius: 8px; }
 
-        .hit-mark { position: fixed; width: 10px; height: 10px; background: var(--neon-red); border: 2px solid white; border-radius: 50%; pointer-events: none; z-index: 10001; transform: translate(-50%, -50%); box-shadow: 0 0 10px var(--neon-red); }
+        .hit-mark { position: fixed; width: 10px; height: 10px; background: var(--neon-red); border: 1px solid white; border-radius: 50%; pointer-events: none; z-index: 10001; transform: translate(-50%, -50%); }
     </style>
 </head>
 <body>
@@ -87,49 +83,48 @@
 
     <div id="ui-layer">
         <div id="tab-menu">
-            <div id="btn-dart" class="tab-btn" onclick="switchTab('dart')">DART CHALLENGE</div>
-            <div id="btn-slot" class="tab-btn" onclick="switchTab('slot')">ELITE SLOT</div>
+            <div id="btn-dart" class="tab-btn" onclick="switchTab('dart')">DART GAME</div>
+            <div id="btn-slot" class="tab-btn" onclick="switchTab('slot')">SLOT MACHINE</div>
         </div>
 
         <h1>EDEN CASINO</h1>
 
         <div id="dart-section" class="game-section">
-            <div class="description">UNSTABLE AIM: REACH THE TOP LEGACY</div>
-            <div style="display: flex; gap: 40px; align-items: flex-start; margin-top: 20px;">
+            <div class="description">불멸의 기록을 위한 극한의 저격</div>
+            <div style="display: flex; gap: 40px; align-items: flex-start;">
                 <div id="hud">
-                    <div class="stat-box"><div class="label">Darts Remaining</div><div id="darts-val" class="val">10</div></div>
-                    <div class="stat-box"><div class="label">Total Score</div><div id="total-score" class="val">0</div></div>
-                    <div class="stat-box"><div class="label">Last Hit</div><div id="hit-val" class="val">0</div></div>
+                    <div class="stat-box"><div class="label">Darts</div><div id="darts-val" class="val">10</div></div>
+                    <div class="stat-box"><div class="label">Score</div><div id="total-score" class="val">0</div></div>
+                    <div class="stat-box"><div class="label">Hit</div><div id="hit-val" class="val">0</div></div>
                     <div id="over-ui" style="display:none;">
                         <input type="text" id="nick-dart" placeholder="NICKNAME">
-                        <button onclick="saveResult('dart')">RECORD LEGACY</button>
+                        <button id="save-dart-btn" onclick="saveResult('dart')">RECORD LEGACY</button>
                     </div>
                 </div>
                 <div class="leaderboard" style="width: 500px; margin-top: 0;">
-                    <div class="board-header"><h2>TOP 10 LEGENDS</h2><button style="width:auto; padding:8px 15px; font-size:0.8em;" onclick="adminReset('dart')">RESET</button></div>
+                    <div class="board-header"><h2>TOP 10</h2><button style="width:auto; padding:5px 10px;" onclick="adminReset('dart')">RESET</button></div>
                     <ul id="rankList" class="rankList"></ul>
                 </div>
             </div>
         </div>
 
         <div id="slot-section" class="game-section">
-            <div class="description">ONE SPIN, ONE DESTINY</div>
             <div id="slot-machine">
-                <div id="slot-msg" style="color: var(--neon-red); font-weight: bold; margin-bottom: 20px; font-size: 1.2em;">CHALLENGE YOUR LUCK</div>
+                <div id="slot-msg" style="color:var(--neon-red); margin-bottom:20px; font-weight:bold;">READY TO SPIN</div>
                 <div class="slot-container">
                     <div class="slot-window"><div id="reel1" class="slot-reel"></div></div>
                     <div class="slot-window"><div id="reel2" class="slot-reel"></div></div>
                     <div class="slot-window"><div id="reel3" class="slot-reel"></div></div>
                     <div class="slot-window"><div id="reel4" class="slot-reel"></div></div>
                 </div>
-                <button id="spin-btn" onclick="spinSlot()">SPIN THE FATE</button>
+                <button id="spin-btn" onclick="spinSlot()">SPIN</button>
                 <div id="slot-over-ui" style="display:none; margin-top:20px;">
                     <input type="text" id="slot-nick" placeholder="NICKNAME">
-                    <button onclick="saveResult('slot')">RECORD LEGACY</button>
+                    <button id="save-slot-btn" onclick="saveResult('slot')">RECORD LEGACY</button>
                 </div>
             </div>
             <div class="leaderboard">
-                <div class="board-header"><h2>SLOT CHAMPIONS</h2><button style="width:auto; padding:8px 15px; font-size:0.8em;" onclick="adminReset('slot')">RESET</button></div>
+                <div class="board-header"><h2>SLOT LEGENDS</h2><button style="width:auto; padding:5px 10px;" onclick="adminReset('slot')">RESET</button></div>
                 <ul id="slotRankList" class="rankList"></ul>
             </div>
         </div>
@@ -144,41 +139,29 @@
 
     const dartImg = document.getElementById('moving-dart');
     const cursor = document.getElementById('custom-cursor');
-    const dSize = 400; 
-    let posX = Math.random() * (window.innerWidth - dSize);
-    let posY = Math.random() * (window.innerHeight - dSize);
-    let vx = 16, vy = 14, rot = 0;
-    let score = 0, darts = 10, over = false;
+    const dSize = 420; 
+    let posX = Math.random() * (window.innerWidth - dSize), posY = Math.random() * (window.innerHeight - dSize);
+    let vx = 15, vy = 13, rot = 0;
+    let score = 0, darts = 10, over = false, currentWinC = 0;
     let mx = 0, my = 0, sx = 0, sy = 0;
 
-    // 마우스 추적 및 흔들림 로직
     window.onmousemove = (e) => { mx = e.clientX; my = e.clientY; };
     function updateCursor() {
-        sx += (Math.random() - 0.5) * 18; sy += (Math.random() - 0.5) * 18;
-        sx *= 0.92; sy *= 0.92; // 부드러운 감쇠
+        sx += (Math.random() - 0.5) * 20; sy += (Math.random() - 0.5) * 20;
+        sx *= 0.9; sy *= 0.9;
         cursor.style.left = (mx + sx) + 'px'; cursor.style.top = (my + sy) + 'px';
         requestAnimationFrame(updateCursor);
     }
 
-    // 다트 이동 (화면 전체 튕기기)
     function moveDart() {
         if (over || !document.getElementById('dart-section').classList.contains('active')) {
             requestAnimationFrame(moveDart); return;
         }
-        posX += vx; posY += vy; rot += 22;
+        posX += vx; posY += vy; rot += 18;
         if (posX <= 0 || posX >= window.innerWidth - dSize) vx *= -1;
         if (posY <= 0 || posY >= window.innerHeight - dSize) vy *= -1;
         dartImg.style.transform = `translate(${posX}px, ${posY}px) rotate(${rot}deg)`;
         requestAnimationFrame(moveDart);
-    }
-
-    // 예측 불가능한 방향 전환
-    function scramble() {
-        if(!over) {
-            vx = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 12 + 10);
-            vy = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 12 + 10);
-        }
-        setTimeout(scramble, Math.random() * 1000 + 600);
     }
 
     function hitDart(e) {
@@ -188,12 +171,11 @@
         const centerY = rect.top + rect.height / 2;
         const dist = Math.sqrt((e.clientX - centerX)**2 + (e.clientY - centerY)**2);
 
-        const m = document.createElement('div');
-        m.className = 'hit-mark';
+        const m = document.createElement('div'); m.className = 'hit-mark';
         m.style.left = e.clientX + 'px'; m.style.top = e.clientY + 'px';
         document.body.appendChild(m);
 
-        let p = (dist < 12) ? 50 : (dist < 40) ? 25 : (dist < 190) ? Math.floor(Math.random() * 15) + 1 : 0;
+        let p = (dist < 15) ? 50 : (dist < 45) ? 25 : (dist < 200) ? Math.floor(Math.random() * 15) + 1 : 0;
         score += p; darts--;
         document.getElementById('hit-val').innerText = p;
         document.getElementById('total-score').innerText = score;
@@ -212,32 +194,72 @@
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(game + '-section').classList.add('active');
         document.getElementById('btn-' + game).classList.add('active');
-        const isDart = (game === 'dart' && !over);
-        dartImg.style.display = isDart ? 'block' : 'none';
-        cursor.style.display = isDart ? 'block' : 'none';
-        document.body.style.cursor = isDart ? 'none' : 'auto';
+        const isD = (game === 'dart' && !over);
+        dartImg.style.display = isD ? 'block' : 'none';
+        cursor.style.display = isD ? 'block' : 'none';
+        document.body.style.cursor = isD ? 'none' : 'auto';
     }
 
-    window.onload = () => {
-        switchTab(localStorage.getItem('activeGameTab') || 'dart');
-        initReels(); moveDart(); updateCursor(); scramble();
-    };
+    /* --- 기록 저장 로직 (연동 문제 수정) --- */
+    function saveResult(type) {
+        const nickId = (type === 'dart') ? 'nick-dart' : 'slot-nick';
+        const btnId = (type === 'dart') ? 'save-dart-btn' : 'save-slot-btn';
+        const name = document.getElementById(nickId).value.trim();
+        const btn = document.getElementById(btnId);
 
-    /* --- 슬롯머신 로직 (보존 및 UI 강화) --- */
-    const slotItems = ['♠','◆','♥','♣','●','■']; 
-    const weightedPool = ['♠','◆','◆', '♥','♥','♥', '♣','♣','♣', '♣', '●', '●', '●', '●', '●', '●', '■', '■', '■', '■', '■', '■'];
-    function initReels() {
-        document.querySelectorAll('.slot-reel').forEach(reel => {
-            reel.innerHTML = '';
-            for(let j=0; j<20; j++) {
-                const div = document.createElement('div');
-                div.className = 'slot-item';
-                div.innerText = slotItems[Math.floor(Math.random()*slotItems.length)];
-                reel.appendChild(div);
+        if(!name) return alert("NICKNAME PLEASE");
+        btn.disabled = true;
+
+        const finalScore = (type === 'dart') ? score : currentWinC;
+        const path = (type === 'dart') ? 'rankingPro' : 'slotRanking_v3';
+
+        db.ref(path).push().set({
+            name: name,
+            score: parseInt(finalScore),
+            date: firebase.database.ServerValue.TIMESTAMP
+        }, (err) => {
+            if(err) { alert("FAILED"); btn.disabled = false; }
+            else {
+                alert("RECORDED!");
+                if(type === 'dart') location.reload();
+                else {
+                    document.getElementById('slot-over-ui').style.display = 'none';
+                    document.getElementById(nickId).value = '';
+                    btn.disabled = false;
+                }
             }
         });
     }
-    let currentWinC = 0;
+
+    /* --- 데이터 실시간 리스너 --- */
+    db.ref('rankingPro').on('value', (snap) => {
+        const list = document.getElementById('rankList'); list.innerHTML = '';
+        let arr = []; snap.forEach(c => arr.push(c.val()));
+        arr.sort((a,b) => b.score - a.score).slice(0,10).forEach((v, i) => {
+            list.innerHTML += `<li><span>#${i+1} ${v.name}</span><strong>${v.score} PT</strong></li>`;
+        });
+    });
+
+    db.ref('slotRanking_v3').on('value', (snap) => {
+        const list = document.getElementById('slotRankList'); list.innerHTML = '';
+        let arr = []; snap.forEach(c => arr.push(c.val()));
+        arr.reverse().slice(0,10).forEach(v => {
+            list.innerHTML += `<li><span>${v.name}</span><strong>${v.score} C</strong></li>`;
+        });
+    });
+
+    /* --- 슬롯머신 (로직 보존) --- */
+    const weightedPool = ['♠','◆','◆','♥','♥','♥','♣','♣','♣','●','●','●','■','■','■'];
+    function initReels() {
+        document.querySelectorAll('.slot-reel').forEach(r => {
+            r.innerHTML = '';
+            for(let j=0; j<20; j++) {
+                const d = document.createElement('div'); d.className = 'slot-item';
+                d.innerText = weightedPool[Math.floor(Math.random()*weightedPool.length)];
+                r.appendChild(d);
+            }
+        });
+    }
     function spinSlot() {
         document.getElementById('slot-over-ui').style.display = 'none';
         const btn = document.getElementById('spin-btn'); btn.disabled = true;
@@ -254,45 +276,24 @@
         }
         setTimeout(() => {
             btn.disabled = false;
-            const isWin = res.every(v => v === res[0]);
-            if(isWin) {
+            if(res.every(v => v === res[0])) {
                 const s = res[0];
-                let w = (s==='♠')?1000:(s==='◆')?800:(s==='♥')?600:(s==='♣')?400:0;
-                if(w > 0) { currentWinC = w; document.getElementById('slot-over-ui').style.display = 'block'; }
+                currentWinC = (s==='♠')?1000:(s==='◆')?800:(s==='♥')?600:(s==='♣')?400:0;
+                if(currentWinC > 0) document.getElementById('slot-over-ui').style.display = 'block';
             }
             res.forEach((v, i) => {
-                const reel = document.getElementById('reel'+(i+1));
-                reel.style.transition = "none"; reel.style.top = "0px";
-                reel.firstElementChild.innerText = v;
+                const r = document.getElementById('reel'+(i+1));
+                r.style.transition = "none"; r.style.top = "0px"; r.firstElementChild.innerText = v;
             });
         }, 3500);
     }
 
-    function saveResult(type) {
-        const nickId = (type === 'dart') ? 'nick-dart' : 'slot-nick';
-        const name = document.getElementById(nickId).value.trim();
-        if(!name) return;
-        const data = { name, score: (type === 'dart' ? score : currentWinC), date: firebase.database.ServerValue.TIMESTAMP };
-        db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').push().set(data, () => location.reload());
-    }
+    function adminReset(type) { if(prompt("PASS?") === "1119") db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').remove(); }
 
-    function adminReset(type) { if(prompt("ADMIN PASS") === "1119") db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').remove(); }
-
-    db.ref('rankingPro').on('value', snap => {
-        const list = document.getElementById('rankList'); list.innerHTML = '';
-        let arr = []; snap.forEach(c => arr.push(c.val()));
-        arr.sort((a,b) => b.score - a.score).slice(0,10).forEach((v, i) => {
-            list.innerHTML += `<li><span>#${i+1} ${v.name}</span><strong>${v.score} PT</strong></li>`;
-        });
-    });
-
-    db.ref('slotRanking_v3').on('value', snap => {
-        const list = document.getElementById('slotRankList'); list.innerHTML = '';
-        let arr = []; snap.forEach(c => arr.push(c.val()));
-        arr.reverse().slice(0,10).forEach(v => {
-            list.innerHTML += `<li><span>${v.name}</span><strong>${v.score} C</strong></li>`;
-        });
-    });
+    window.onload = () => {
+        switchTab(localStorage.getItem('activeGameTab') || 'dart');
+        initReels(); moveDart(); updateCursor();
+    };
 </script>
 </body>
 </html>
