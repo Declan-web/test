@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>CASINO EDEN - PRO EDITION</title>
+    <title>CASINO EDEN - OFFICIAL</title>
     <style>
         :root {
             --dark-red: #7a0000;
@@ -16,14 +16,24 @@
             font-family: 'Pretendard', sans-serif; 
             display: flex; flex-direction: column; align-items: center; 
             overflow: hidden; width: 100vw; height: 100vh; position: relative;
-            cursor: none; /* 기본 커서 숨김 */
+            cursor: none; 
         }
         
-        /* 커서 스타일 */
+        /* 다트판: 최상위 레이어 설정 */
+        #moving-dart {
+            position: fixed; width: 420px; height: 420px;
+            z-index: 9999; /* 모든 UI보다 위에 표시 */
+            pointer-events: none; /* 클릭 방해 금지 */
+            display: none; top: 0; left: 0;
+            filter: drop-shadow(0 0 30px rgba(0,0,0,1));
+            will-change: transform;
+        }
+
+        /* 커서 및 히트마크도 최상위권 유지 */
         #custom-cursor {
             position: fixed; width: 40px; height: 40px;
             border: 2px solid var(--neon-red); border-radius: 50%;
-            pointer-events: none; z-index: 10002; transform: translate(-50%, -50%);
+            pointer-events: none; z-index: 10000; transform: translate(-50%, -50%);
             box-shadow: 0 0 15px var(--neon-red); display: none;
         }
         #custom-cursor::after, #custom-cursor::before {
@@ -32,16 +42,10 @@
         #custom-cursor::after { width: 100%; height: 1px; }
         #custom-cursor::before { width: 1px; height: 100%; }
 
-        /* 움직이는 다트 이미지 */
-        #moving-dart {
-            position: fixed; width: 420px; height: 420px;
-            z-index: 5; will-change: transform;
-            display: none; top: 0; left: 0;
-            filter: drop-shadow(0 0 30px rgba(0,0,0,1));
-            pointer-events: none; /* 클릭 방해 금지 */
-        }
+        .hit-mark { position: fixed; width: 10px; height: 10px; background: var(--neon-red); border: 1px solid white; border-radius: 50%; pointer-events: none; z-index: 9998; transform: translate(-50%, -50%); }
 
-        #ui-layer { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; width: 100%; pointer-events: none; }
+        /* UI 레이어 */
+        #ui-layer { position: relative; z-index: 100; display: flex; flex-direction: column; align-items: center; width: 100%; pointer-events: none; }
         #ui-layer * { pointer-events: auto; }
 
         #tab-menu { display: flex; gap: 15px; margin-top: 30px; }
@@ -54,32 +58,29 @@
         .game-section { display: none; flex-direction: column; align-items: center; width: 100%; }
         .game-section.active { display: flex; }
 
+        /* HUD 및 랭킹 */
         #hud { width: 260px; background: var(--glass-bg); padding: 25px; border-radius: 15px; border: 1px solid #222; }
         .stat-box { margin-bottom: 25px; }
         .label { color: #666; font-size: 0.75em; margin-bottom: 8px; text-transform: uppercase; }
         .val { font-size: 2.2em; font-weight: bold; }
         #total-score { color: var(--neon-red); }
 
+        /* 슬롯머신 복구된 스타일 */
         #slot-machine { width: 700px; background: #151515; padding: 50px; border-radius: 20px; border: 8px solid #2a2a2a; text-align: center; box-shadow: inset 0 0 80px #000; }
         .slot-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; }
         .slot-window { width: 120px; height: 160px; background: #000; border: 4px solid var(--dark-red); border-radius: 10px; overflow: hidden; position: relative; }
-        .slot-reel { position: absolute; top: 0; left: 0; width: 100%; display: flex; flex-direction: column; transition: top 2s cubic-bezier(0.45, 0.05, 0.55, 0.95); }
+        .slot-reel { position: absolute; top: 0; left: 0; width: 100%; display: flex; flex-direction: column; }
         .slot-item { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; font-size: 4.5em; flex-shrink: 0; }
         .diamond-item { font-size: 3.5em !important; }
 
         #slot-msg { height: 40px; color: var(--dark-red); margin-bottom: 10px; font-weight: bold; font-size: 1.2em; }
         
         .leaderboard { width: 850px; margin-top: 30px; background: var(--glass-bg); padding: 30px; border-radius: 15px; border: 1px solid #222; }
-        .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
-        .board-header h2 { margin: 0; color: var(--dark-red); font-size: 1.6em; }
-        
         .rankList { list-style: none; padding: 0; margin: 0; max-height: 350px; overflow-y: auto; }
         .rankList li { display: flex; justify-content: space-between; padding: 14px; border-bottom: 1px solid #1a1a1a; }
         
         input { width: 100%; padding: 15px; margin-bottom: 15px; background: #111; border: 1px solid #333; color: white; border-radius: 8px; box-sizing: border-box; }
         button { width: 100%; padding: 20px; background: var(--dark-red); border: none; color: #fff; font-weight: bold; cursor: pointer; font-size: 1.2em; border-radius: 8px; }
-
-        .hit-mark { position: fixed; width: 10px; height: 10px; background: var(--neon-red); border: 1px solid white; border-radius: 50%; pointer-events: none; z-index: 10001; transform: translate(-50%, -50%); }
     </style>
 </head>
 <body onmousedown="handleGlobalClick(event)">
@@ -104,11 +105,10 @@
                     <div class="stat-box"><div class="label">Hit</div><div id="hit-val" class="val">0</div></div>
                     <div id="over-ui" style="display:none;">
                         <input type="text" id="nick-dart" placeholder="NICKNAME">
-                        <button id="save-dart-btn" onclick="saveResult('dart')">RECORD LEGACY</button>
+                        <button onclick="saveResult('dart')">RECORD LEGACY</button>
                     </div>
                 </div>
                 <div class="leaderboard" style="width: 500px; margin-top: 0;">
-                    <div class="board-header"><h2>TOP 10</h2><button style="width:auto; padding:5px 10px;" onclick="adminReset('dart')">RESET</button></div>
                     <ul id="rankList" class="rankList"></ul>
                 </div>
             </div>
@@ -125,13 +125,11 @@
                 </div>
                 <button id="spin-btn" onclick="spinSlot()">SPIN</button>
                 <div id="slot-over-ui" style="display:none; margin-top:20px;">
-                    <p style="color:var(--dark-red); font-weight:bold; font-size:1.5em;">SUCCESS!</p>
                     <input type="text" id="slot-nick" placeholder="NICKNAME">
-                    <button id="save-slot-btn" onclick="saveResult('slot')">RECORD LEGACY</button>
+                    <button onclick="saveResult('slot')">RECORD LEGACY</button>
                 </div>
             </div>
             <div class="leaderboard">
-                <div class="board-header"><h2>SLOT LEGENDS</h2><button style="width:auto; padding:5px 10px;" onclick="adminReset('slot')">RESET</button></div>
                 <ul id="slotRankList" class="rankList"></ul>
             </div>
         </div>
@@ -152,13 +150,9 @@
     let score = 0, darts = 10, over = false, currentWinC = 0;
     let mx = 0, my = 0, sx = 0, sy = 0;
 
-    window.onmousemove = (e) => { 
-        mx = e.clientX; 
-        my = e.clientY; 
-    };
+    window.onmousemove = (e) => { mx = e.clientX; my = e.clientY; };
 
     function updateCursor() {
-        // 커서 흔들림 효과
         sx += (Math.random() - 0.5) * 20; sy += (Math.random() - 0.5) * 20;
         sx *= 0.9; sy *= 0.9;
         cursor.style.left = (mx + sx) + 'px'; 
@@ -177,33 +171,21 @@
         requestAnimationFrame(moveDart);
     }
 
-    // 전역 클릭 핸들러 (다트 게임 활성화 시에만 작동)
     function handleGlobalClick(e) {
         if (!document.getElementById('dart-section').classList.contains('active') || over || darts <= 0) return;
-        
-        // 클릭이 UI 버튼이나 입력창 위에서 발생했다면 무시
         if (e.target.closest('#ui-layer')) return;
 
-        // 실제 조준점 위치 (흔들림 포함)
-        const targetX = mx + sx;
-        const targetY = my + sy;
-
+        const targetX = mx + sx; const targetY = my + sy;
         const rect = dartImg.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
-        
-        // 거리 계산
         const dist = Math.sqrt((targetX - centerX)**2 + (targetY - centerY)**2);
 
-        // 시각적 피드백 (히트 마크)
         const m = document.createElement('div'); 
-        m.className = 'hit-mark';
-        m.style.left = targetX + 'px'; 
-        m.style.top = targetY + 'px';
+        m.className = 'hit-mark'; m.style.left = targetX + 'px'; m.style.top = targetY + 'px';
         document.body.appendChild(m);
         setTimeout(() => m.remove(), 1000);
 
-        // 점수 판정
         let p = (dist < 20) ? 50 : (dist < 60) ? 25 : (dist < 180) ? Math.floor(Math.random() * 15) + 1 : 0;
         score += p; darts--;
         
@@ -212,18 +194,14 @@
         document.getElementById('darts-val').innerText = darts;
 
         if (darts <= 0) {
-            over = true; 
-            dartImg.style.display = 'none';
+            over = true; dartImg.style.display = 'none';
             document.getElementById('over-ui').style.display = 'block';
-            document.body.style.cursor = 'auto'; 
-            cursor.style.display = 'none';
+            document.body.style.cursor = 'auto'; cursor.style.display = 'none';
         }
     }
 
-    /* --- 슬롯머신 로직 (두 번째 코드 그대로) --- */
+    /* 슬롯머신 로직 복구 */
     const slotItems = ['♠','◆','♥','♣','●','■']; 
-    const weightedPool = ['♠','♠','◆','◆','♥','♥','♥','♣','♣','♣','●','●','●','■','■','■'];
-
     function initReels() {
         document.querySelectorAll('.slot-reel').forEach(r => {
             r.innerHTML = '';
@@ -243,7 +221,7 @@
         const res = [];
         for(let i=1; i<=4; i++) {
             const reel = document.getElementById('reel'+i);
-            const final = weightedPool[Math.floor(Math.random()*weightedPool.length)];
+            const final = slotItems[Math.floor(Math.random()*slotItems.length)];
             res.push(final);
             reel.lastElementChild.innerText = final;
             reel.lastElementChild.className = 'slot-item' + (final === '◆' ? ' diamond-item' : '');
@@ -254,16 +232,12 @@
         }
         setTimeout(() => {
             btn.disabled = false;
-            const isWin = res.every(v => v === res[0]);
-            if(isWin) {
+            if(res.every(v => v === res[0])) {
                 const s = res[0];
                 let w = (s==='♠')?1000:(s==='◆')?800:(s==='♥')?600:(s==='♣')?400:0;
-                if(w > 0) {
-                    currentWinC = w;
-                    document.getElementById('slot-msg').innerText = `SUCCESS! +${w} C`;
-                    document.getElementById('slot-over-ui').style.display = 'block';
-                } else { document.getElementById('slot-msg').innerText = "FAILED. TRY AGAIN."; }
-            } else { document.getElementById('slot-msg').innerText = "FAILED. TRY AGAIN."; }
+                if(w > 0) { currentWinC = w; document.getElementById('slot-msg').innerText = `SUCCESS! +${w} C`; document.getElementById('slot-over-ui').style.display = 'block'; }
+                else { document.getElementById('slot-msg').innerText = "FAILED."; }
+            } else { document.getElementById('slot-msg').innerText = "FAILED."; }
             res.forEach((v, i) => {
                 const r = document.getElementById('reel'+(i+1));
                 r.style.transition = "none"; r.style.top = "0px"; r.firstElementChild.innerText = v;
@@ -285,21 +259,12 @@
     }
 
     function saveResult(type) {
-        const nickId = (type === 'dart') ? 'nick-dart' : 'slot-nick';
-        const name = document.getElementById(nickId).value.trim();
+        const name = document.getElementById(type === 'dart' ? 'nick-dart' : 'slot-nick').value.trim();
         if(!name) return alert("NICKNAME PLEASE");
-        const finalScore = (type === 'dart') ? score : currentWinC;
-        const path = (type === 'dart') ? 'rankingPro' : 'slotRanking_v3';
-        db.ref(path).push().set({ name, score: parseInt(finalScore), date: firebase.database.ServerValue.TIMESTAMP }, (err) => {
-            if(err) alert("FAILED");
-            else {
-                alert("RECORDED!");
-                location.reload();
-            }
+        db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').push().set({ name, score: parseInt(type === 'dart' ? score : currentWinC), date: firebase.database.ServerValue.TIMESTAMP }, (err) => {
+            if(!err) { alert("RECORDED!"); location.reload(); }
         });
     }
-
-    function adminReset(type) { if(prompt("PASS?") === "1119") db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').remove(); }
 
     db.ref('rankingPro').on('value', (snap) => {
         const list = document.getElementById('rankList'); list.innerHTML = '';
@@ -317,10 +282,7 @@
         });
     });
 
-    window.onload = () => {
-        switchTab(localStorage.getItem('activeGameTab') || 'dart');
-        initReels(); moveDart(); updateCursor();
-    };
+    window.onload = () => { switchTab(localStorage.getItem('activeGameTab') || 'dart'); initReels(); moveDart(); updateCursor(); };
 </script>
 </body>
 </html>
