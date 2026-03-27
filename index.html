@@ -57,12 +57,16 @@
         .val { font-size: 2.2em; font-weight: bold; }
         #total-score { color: var(--neon-red); }
 
-        #slot-machine { width: 700px; background: #0a0a0a; padding: 50px; border-radius: 24px; border: 2px solid #222; text-align: center; }
-        .slot-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 35px; }
-        .slot-window { width: 120px; height: 160px; background: #000; border: 3px solid #333; border-radius: 12px; overflow: hidden; position: relative; }
+        /* 슬롯머신 스타일 (두 번째 코드 기준) */
+        #slot-machine { width: 700px; background: #151515; padding: 50px; border-radius: 20px; border: 8px solid #2a2a2a; text-align: center; box-shadow: inset 0 0 80px #000; }
+        .slot-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; }
+        .slot-window { width: 120px; height: 160px; background: #000; border: 4px solid var(--dark-red); border-radius: 10px; overflow: hidden; position: relative; }
         .slot-reel { position: absolute; top: 0; left: 0; width: 100%; display: flex; flex-direction: column; transition: top 2s cubic-bezier(0.45, 0.05, 0.55, 0.95); }
         .slot-item { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; font-size: 4.5em; flex-shrink: 0; }
+        .diamond-item { font-size: 3.5em !important; }
 
+        #slot-msg { height: 40px; color: var(--dark-red); margin-bottom: 10px; font-weight: bold; font-size: 1.2em; }
+        
         .leaderboard { width: 850px; margin-top: 30px; background: var(--glass-bg); padding: 30px; border-radius: 15px; border: 1px solid #222; }
         .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
         .board-header h2 { margin: 0; color: var(--dark-red); font-size: 1.6em; }
@@ -72,6 +76,7 @@
         
         input { width: 100%; padding: 15px; margin-bottom: 15px; background: #111; border: 1px solid #333; color: white; border-radius: 8px; box-sizing: border-box; }
         button { width: 100%; padding: 20px; background: var(--dark-red); border: none; color: #fff; font-weight: bold; cursor: pointer; font-size: 1.2em; border-radius: 8px; }
+        button:hover { background: #990000; }
 
         .hit-mark { position: fixed; width: 10px; height: 10px; background: var(--neon-red); border: 1px solid white; border-radius: 50%; pointer-events: none; z-index: 10001; transform: translate(-50%, -50%); }
     </style>
@@ -109,8 +114,9 @@
         </div>
 
         <div id="slot-section" class="game-section">
+            <div class="description">운명이 결정되는 단 한 번의 찬스</div>
             <div id="slot-machine">
-                <div id="slot-msg" style="color:var(--neon-red); margin-bottom:20px; font-weight:bold;">READY TO SPIN</div>
+                <div id="slot-msg">CHALLENGE YOUR LUCK</div>
                 <div class="slot-container">
                     <div class="slot-window"><div id="reel1" class="slot-reel"></div></div>
                     <div class="slot-window"><div id="reel2" class="slot-reel"></div></div>
@@ -119,6 +125,7 @@
                 </div>
                 <button id="spin-btn" onclick="spinSlot()">SPIN</button>
                 <div id="slot-over-ui" style="display:none; margin-top:20px;">
+                    <p style="color:var(--dark-red); font-weight:bold; font-size:1.5em;">SUCCESS!</p>
                     <input type="text" id="slot-nick" placeholder="NICKNAME">
                     <button id="save-slot-btn" onclick="saveResult('slot')">RECORD LEGACY</button>
                 </div>
@@ -137,6 +144,7 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    /* --- 다트 게임 로직 (첫 번째 코드 그대로) --- */
     const dartImg = document.getElementById('moving-dart');
     const cursor = document.getElementById('custom-cursor');
     const dSize = 420; 
@@ -188,6 +196,59 @@
         }
     }
 
+    /* --- 슬롯머신 로직 (두 번째 코드 그대로) --- */
+    const slotItems = ['♠','◆','♥','♣','●','■']; 
+    const weightedPool = ['♠','♠','◆','◆','♥','♥','♥','♣','♣','♣','●','●','●','■','■','■'];
+
+    function initReels() {
+        document.querySelectorAll('.slot-reel').forEach(r => {
+            r.innerHTML = '';
+            for(let j=0; j<20; j++) {
+                const sym = slotItems[Math.floor(Math.random()*slotItems.length)];
+                const d = document.createElement('div');
+                d.className = 'slot-item' + (sym === '◆' ? ' diamond-item' : '');
+                d.innerText = sym; r.appendChild(d);
+            }
+        });
+    }
+
+    function spinSlot() {
+        document.getElementById('slot-over-ui').style.display = 'none';
+        document.getElementById('slot-msg').innerText = "ROLLING...";
+        const btn = document.getElementById('spin-btn'); btn.disabled = true;
+        const res = [];
+        for(let i=1; i<=4; i++) {
+            const reel = document.getElementById('reel'+i);
+            const final = weightedPool[Math.floor(Math.random()*weightedPool.length)];
+            res.push(final);
+            reel.lastElementChild.innerText = final;
+            reel.lastElementChild.className = 'slot-item' + (final === '◆' ? ' diamond-item' : '');
+            reel.style.transition = "none"; reel.style.top = "0px";
+            void reel.offsetWidth; 
+            reel.style.transition = `top ${2 + (i-1)*0.4}s cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
+            reel.style.top = "-3040px";
+        }
+        setTimeout(() => {
+            btn.disabled = false;
+            const isWin = res.every(v => v === res[0]);
+            if(isWin) {
+                const s = res[0];
+                let w = (s==='♠')?1000:(s==='◆')?800:(s==='♥')?600:(s==='♣')?400:0;
+                if(w > 0) {
+                    currentWinC = w;
+                    document.getElementById('slot-msg').innerText = `SUCCESS! +${w} C`;
+                    document.getElementById('slot-over-ui').style.display = 'block';
+                } else { document.getElementById('slot-msg').innerText = "FAILED. TRY AGAIN."; }
+            } else { document.getElementById('slot-msg').innerText = "FAILED. TRY AGAIN."; }
+            res.forEach((v, i) => {
+                const r = document.getElementById('reel'+(i+1));
+                r.style.transition = "none"; r.style.top = "0px"; r.firstElementChild.innerText = v;
+                r.firstElementChild.className = 'slot-item' + (v === '◆' ? ' diamond-item' : '');
+            });
+        }, 3500);
+    }
+
+    /* --- 공통 기능 및 저장 로직 --- */
     function switchTab(game) {
         localStorage.setItem('activeGameTab', game); 
         document.querySelectorAll('.game-section').forEach(s => s.classList.remove('active'));
@@ -200,38 +261,30 @@
         document.body.style.cursor = isD ? 'none' : 'auto';
     }
 
-    /* --- 기록 저장 로직 (연동 문제 수정) --- */
     function saveResult(type) {
         const nickId = (type === 'dart') ? 'nick-dart' : 'slot-nick';
         const btnId = (type === 'dart') ? 'save-dart-btn' : 'save-slot-btn';
         const name = document.getElementById(nickId).value.trim();
         const btn = document.getElementById(btnId);
-
         if(!name) return alert("NICKNAME PLEASE");
         btn.disabled = true;
-
         const finalScore = (type === 'dart') ? score : currentWinC;
         const path = (type === 'dart') ? 'rankingPro' : 'slotRanking_v3';
-
-        db.ref(path).push().set({
-            name: name,
-            score: parseInt(finalScore),
-            date: firebase.database.ServerValue.TIMESTAMP
-        }, (err) => {
+        db.ref(path).push().set({ name, score: parseInt(finalScore), date: firebase.database.ServerValue.TIMESTAMP }, (err) => {
             if(err) { alert("FAILED"); btn.disabled = false; }
             else {
                 alert("RECORDED!");
                 if(type === 'dart') location.reload();
                 else {
                     document.getElementById('slot-over-ui').style.display = 'none';
-                    document.getElementById(nickId).value = '';
-                    btn.disabled = false;
+                    document.getElementById(nickId).value = ''; btn.disabled = false;
                 }
             }
         });
     }
 
-    /* --- 데이터 실시간 리스너 --- */
+    function adminReset(type) { if(prompt("PASS?") === "1119") db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').remove(); }
+
     db.ref('rankingPro').on('value', (snap) => {
         const list = document.getElementById('rankList'); list.innerHTML = '';
         let arr = []; snap.forEach(c => arr.push(c.val()));
@@ -243,52 +296,10 @@
     db.ref('slotRanking_v3').on('value', (snap) => {
         const list = document.getElementById('slotRankList'); list.innerHTML = '';
         let arr = []; snap.forEach(c => arr.push(c.val()));
-        arr.reverse().slice(0,10).forEach(v => {
+        arr.reverse().forEach(v => {
             list.innerHTML += `<li><span>${v.name}</span><strong>${v.score} C</strong></li>`;
         });
     });
-
-    /* --- 슬롯머신 (로직 보존) --- */
-    const weightedPool = ['♠','◆','◆','♥','♥','♥','♣','♣','♣','●','●','●','■','■','■'];
-    function initReels() {
-        document.querySelectorAll('.slot-reel').forEach(r => {
-            r.innerHTML = '';
-            for(let j=0; j<20; j++) {
-                const d = document.createElement('div'); d.className = 'slot-item';
-                d.innerText = weightedPool[Math.floor(Math.random()*weightedPool.length)];
-                r.appendChild(d);
-            }
-        });
-    }
-    function spinSlot() {
-        document.getElementById('slot-over-ui').style.display = 'none';
-        const btn = document.getElementById('spin-btn'); btn.disabled = true;
-        const res = [];
-        for(let i=1; i<=4; i++) {
-            const reel = document.getElementById('reel'+i);
-            const final = weightedPool[Math.floor(Math.random()*weightedPool.length)];
-            res.push(final);
-            reel.lastElementChild.innerText = final;
-            reel.style.transition = "none"; reel.style.top = "0px";
-            void reel.offsetWidth; 
-            reel.style.transition = `top ${2 + (i-1)*0.4}s cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
-            reel.style.top = "-3040px";
-        }
-        setTimeout(() => {
-            btn.disabled = false;
-            if(res.every(v => v === res[0])) {
-                const s = res[0];
-                currentWinC = (s==='♠')?1000:(s==='◆')?800:(s==='♥')?600:(s==='♣')?400:0;
-                if(currentWinC > 0) document.getElementById('slot-over-ui').style.display = 'block';
-            }
-            res.forEach((v, i) => {
-                const r = document.getElementById('reel'+(i+1));
-                r.style.transition = "none"; r.style.top = "0px"; r.firstElementChild.innerText = v;
-            });
-        }, 3500);
-    }
-
-    function adminReset(type) { if(prompt("PASS?") === "1119") db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').remove(); }
 
     window.onload = () => {
         switchTab(localStorage.getItem('activeGameTab') || 'dart');
